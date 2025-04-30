@@ -1,0 +1,77 @@
+clear;
+clc;
+
+
+
+% Motor Parameters
+m_motor = 52e-3;                % Mass of motor [kg]
+r_propeller = 0.15;             % Propeller radius [m]
+J_motor = (1/2) * m_motor * r_propeller^2; % Motor's moment of inertia
+
+R = 0.09;       % Resistance (Ohms)
+L = 50e-6;      % Inductance (H)
+Ke = 0.00434;   % Back-EMF constant (V-s/rad)
+Kt = 0.00434;   % Torque constant (Nm/A)
+B = 0.001;      % Damping coefficient (Nm-s/rad)
+
+% System Parameters
+m_rod = 0.198;                  % Mass of the rod [kg]
+l_rod = 0.3;                    % Length of the rod [m]
+J_rod = m_rod * l_rod^2;        % Rod's moment of inertia
+
+J_total = J_rod + J_motor;      % Total inertia
+g = 9.81;                       % Gravitational acceleration [m/s^2]
+
+% Thrust Force Parameters
+C_t = 1.732;                    % Thrust coefficient
+P = 1.225;                      % Air density
+r = 0.15;                       % Radius of Propeller
+pitch = 0.1143;                 % Pitch of Propeller
+
+% Air speed v = k * W (where omega is the rotor speed)
+k = pitch / (2 * pi);           % Proportionality constant dependent on the propeller
+
+% Initial conditions
+x0 = [pi/6; 0; 0; 0];  % [theta, theta_dot, W, I]
+tspan = [0 10];
+
+% Backstepping Controller Gains
+k1 = 5;
+k2 = 10;
+k3 = 5;
+
+% Define PWM voltage input (control action from backstepping)
+pwm_voltage = @(x, t) (
+    R * x(4) + Ke * x(3) + L * (-k3 * (x(3) - sqrt((l_rod * (1/2 * C_t * pi * P * r^2 * k^2 * x(3)^2) - l_rod * (0.5 * m_rod + m_motor) * g * sin(x(1))) / J_total)) ...
+    + (Kt * x(4) - B * x(3)) / J_motor);
+);
+
+% Nonlinear state-space dynamics with motor model
+nonlinear_dynamics = @(t, x) [
+    x(2); % theta_dot
+    (l_rod * (1/2 * C_t * pi * P * r^2 * k^2 * x(3)^2) - l_rod * (0.5 * m_rod + m_motor) * g * sin(x(1))) / J_total; % theta_ddot
+    (Kt * x(4) - B * x(3)) / J_motor; % dW/dt
+    (-(R * x(4)) - Ke * x(3) + pwm_voltage(x, t)) / L % dI/dt
+];
+
+% Simulate using ODE solver
+[t, x] = ode45(@(t, x) nonlinear_dynamics(t, x), tspan, x0);
+
+% Plot results
+figure;
+subplot(3, 1, 1);
+plot(t, x(:, 1));
+ylabel('\theta (rad)');
+title('Rod Angular Position');
+
+subplot(3, 1, 2);
+plot(t, x(:, 2));
+ylabel('\theta_{dot} (rad/sec)');
+xlabel('Time (s)');
+title('Angular Velocity (\dot{\theta})');
+
+subplot(3, 1, 3);
+plot(t, x(:, 3));
+ylabel('Rotor Speed W (rad/s)');
+xlabel('Time (s)');
+title('Rotor Speed');

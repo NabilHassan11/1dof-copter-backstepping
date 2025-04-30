@@ -1,0 +1,6 @@
+-I"C:/Users/Nabil/Desktop/Semester 9/Advanced Mechatronics/Project/Simulations/MATLAB"
+-I"C:/Users/Nabil/Desktop/Semester 9/Advanced Mechatronics/Project/Simulations/MATLAB/Model_grt_rtw"
+-I"C:/Program Files/MATLAB/R2024b/extern/include"
+-I"C:/Program Files/MATLAB/R2024b/simulink/include"
+-I"C:/Program Files/MATLAB/R2024b/rtw/c/src"
+-I"C:/Program Files/MATLAB/R2024b/rtw/c/src/ext_mode/common"
